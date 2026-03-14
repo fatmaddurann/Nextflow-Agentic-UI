@@ -1,0 +1,130 @@
+version: "3.9"
+
+# =====================================================
+# Nextflow-Agentic-UI Docker Compose Orchestration
+# =====================================================
+
+networks:
+  nextflow-agentic-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  chroma_data:
+  pipeline_work:
+  pipeline_results:
+  pipeline_logs:
+
+services:
+
+  # ── PostgreSQL (optional, use if DATABASE_URL points to postgres) ──────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: nf_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nextflow_agentic
+      POSTGRES_USER: nfagent
+      POSTGRES_PASSWORD: nfagent_secret
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - nextflow-agentic-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nfagent -d nextflow_agentic"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── ChromaDB Vector Store ──────────────────────────────────────────────────
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: nf_chromadb
+    restart: unless-stopped
+    environment:
+      IS_PERSISTENT: "TRUE"
+      PERSIST_DIRECTORY: /chroma/chroma
+      ANONYMIZED_TELEMETRY: "FALSE"
+    volumes:
+      - chroma_data:/chroma/chroma
+    ports:
+      - "8001:8000"
+    networks:
+      - nextflow-agentic-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # ── FastAPI Backend ────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nf_backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql://nfagent:nfagent_secret@postgres:5432/nextflow_agentic
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+    volumes:
+      - ./backend:/app
+      - /var/run/docker.sock:/var/run/docker.sock  # Docker-in-Docker access
+      - pipeline_work:/pipeline/work
+      - pipeline_results:/pipeline/results
+      - pipeline_logs:/pipeline/logs
+      - ./pipeline:/pipeline/src:ro
+    ports:
+      - "8000:8000"
+    networks:
+      - nextflow-agentic-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      chromadb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+
+  # ── React Frontend ─────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: nf_frontend
+    restart: unless-stopped
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+      - VITE_WS_URL=ws://localhost:8000/ws
+    ports:
+      - "3000:80"
+    networks:
+      - nextflow-agentic-net
+    depends_on:
+      - backend
+
+  # ── Monitoring Sidecar ─────────────────────────────────────────────────────
+  monitor:
+    build:
+      context: ./monitoring
+      dockerfile: Dockerfile
+    container_name: nf_monitor
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - BACKEND_URL=http://backend:8000
+    volumes:
+      - pipeline_logs:/pipeline/logs:ro
+      - pipeline_work:/pipeline/work:ro
+    networks:
+      - nextflow-agentic-net
+    depends_on:
+      backend:
+        condition: service_healthy

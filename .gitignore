@@ -1,0 +1,98 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+.mypy_cache/
+.dmypy.json
+.ruff_cache/
+.pytest_cache/
+htmlcov/
+.coverage
+*.cover
+
+# ── Secrets / Environment ─────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.secret
+secrets/
+
+# ── Node / Frontend ───────────────────────────────────────────────────────────
+node_modules/
+frontend/dist/
+frontend/.vite/
+.npm/
+*.tsbuildinfo
+package-lock.json
+
+# ── Database ──────────────────────────────────────────────────────────────────
+backend/data/
+*.db
+*.sqlite
+*.sqlite3
+
+# ── ChromaDB / Vector Store ───────────────────────────────────────────────────
+knowledge_base/chroma_db/
+chroma_db/
+*.chroma
+
+# ── Nextflow pipeline output ──────────────────────────────────────────────────
+pipeline/work/
+pipeline/results/
+pipeline/logs/
+pipeline/.nextflow/
+pipeline/.nextflow.log*
+.nextflow/
+.nextflow.log*
+work/
+results/
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+*.tar
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+desktop.ini
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+*.iml
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Uploads ───────────────────────────────────────────────────────────────────
+uploads/
+/tmp/
+
+# ── Test data (large files) ───────────────────────────────────────────────────
+pipeline/test_data/*.fastq.gz
+pipeline/test_data/*.fq.gz
+pipeline/test_data/genome/*.fa
+pipeline/test_data/genome/*.fai
+pipeline/test_data/star_index/
+
+# ── Alembic migrations (auto-generated) ──────────────────────────────────────
+alembic/versions/
