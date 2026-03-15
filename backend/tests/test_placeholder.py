@@ -3,8 +3,8 @@
 
 def test_imports():
     """Verify core modules are importable."""
-    from database.models import WorkflowStatus, PipelineType, SeverityLevel
     from api.models.schemas import WorkflowCreateRequest
+    from database.models import PipelineType, SeverityLevel, WorkflowStatus
 
     assert WorkflowStatus.PENDING == "pending"
     assert PipelineType.RNASEQ == "rnaseq"
